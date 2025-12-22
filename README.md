@@ -1,139 +1,142 @@
-<p align="center">
-<img src="https://i.imgur.com/Clzj7Xs.png" alt="osTicket logo"/>
-</p>
+# Windows Server 2019 – Active Directory Domain Setup
 
-<h1>osTicket - Prerequisites and Installation</h1>
-This tutorial outlines the prerequisites and installation of the open-source help desk ticketing system osTicket.<br />
+This tutorial outlines the step-by-step installation, configuration, and security hardening of a Windows Server 2019 Active Directory (AD) environment in a virtualized lab. The guide is tailored for IT Support and Systems Administration learning and features realistic Domain deployment, DNS/DHCP, GPO, and vulnerability preparations.
 
+---
 
-<h2>Video Demonstration</h2>
+## Environments and Technologies Used
 
-- ### [YouTube: osTicket Tutorial (Phase 1/3) Installation](https://www.youtube.com/watch?v=a-IF-HARyjw)
+- VirtualBox (Virtualization)
+- Windows Server 2019 (Evaluation)
+- pfSense Firewall (Virtual Router)
+- Active Directory Domain Services (AD DS)
+- DNS/DHCP Services
+- Group Policy Management
+- PowerShell
 
-<h2>Environments and Technologies Used</h2>
+## Operating Systems Used
 
-- Microsoft Azure (Virtual Machines/Compute)
-- Remote Desktop
-- Internet Information Services (IIS)
+- Windows Server 2019
+- pfSense
 
-<h2>Operating Systems Used </h2>
+---
 
-- Windows 10</b> (21H2)
+## Prerequisites
 
-<h2>List of Prerequisites</h2>
+- Download [Windows Server 2019 Evaluation ISO](https://www.microsoft.com/en-us/evalcenter/download-windows-server-2019).
+  - Download the 64-bit ISO and rename it to “windows server 2019”.
+- VirtualBox installed with at least 4096MB memory allocated for the VM.
+- pfSense virtual appliance for network segmentation.
 
-<ul>
-  <li><strong>mySQL:</strong> The database which will contain the data from osTicket.</li>
-  <li><strong>HeidiSQL:</strong> The database manager or GUI we will use to interact with the database.</li>
-  <li><strong>PHP:</strong> The server-side scripting language used to display the HTML webpages of osTicket.</li>
-  <li><strong>PHP Manager:</strong> A feature that will allow us to interact with the scripts through the Management Console.</li>
-  <li><strong>VC Redist:</strong> Provides the necessary runtime components for running C++ applications, essential for certain dependencies of PHP and IIS.</li>
-  <li><strong>Rewrite:</strong> (URL Rewrite Module for IIS) Allows for the customization of URLs, enabling redirection and URL rewriting for osTicket.</li>
-</ul>
+---
 
-<h1>OVERVIEW</h1>
+## OVERVIEW
 
-<ol>
-  <li>Prepare The Windows 10 OS by turning it into a web server.</li>
-  <li>Install Prerequisite Programs. (mySQL, HeidiSQL, PHP, PHP Manager, VC Redist, Rewrite)</li>
-  <li>Install osTicket and confirm it is a website running on this web server.</li>
-  <li>Enable Features and assign permissions to osTicket.</li>
-  <li>Complete installation by registering email and mySQL database.</li>
-  <li>Confirm osTicket can be reached by users on LocalHost.</li>
-  <li>Clean up files that pose a security risk.</li>
-</ol>
+1. Prepare and install Windows Server 2019 in VirtualBox.
+2. Set up internal networking and pfSense for isolation.
+3. Configure static IP and DNS on the server for lab segmentation.
+4. Install and configure Active Directory Domain Services (AD DS).
+5. Set up DNS and DHCP for AD lab environment.
+6. Create test users with varying permissions.
+7. Harden environment, apply GPOs, and enable remote services (RDP, WinRM, RPC).
+8. Prepare an intentionally vulnerable AD environment for security testing.
 
-<h2>1. Prepare The Windows 10 OS by turning it into a web server</h2>
-<p>Install & Enable IIS (Internet Information Services) on the Windows computer, including application features and IIS Management Console.</p>
+---
 
-<h2>2. Install Prerequisite Programs</h2>
+## Step-by-Step Guide
 
-<h3>Installation Steps</h3>
-<ol>
-  <li>Install PHP Manager.</li>
-  <li>Install VC Redist.</li>
-  <li>Install Rewrite.</li>
-  <li>Install PHP:
-    <ul>
-      <li>Create the directory C:\PHP.</li>
-      <li>Extract PHP files into C:\PHP directory.</li>
-      <li>Register PHP from within IIS.</li>
-      <li>Reload IIS (Open IIS, Stop and Start the server).</li>
-    </ul>
-  </li>
-  <li>Install mySQL:
-    <ul>
-      <li>Typical Setup -> Launch Configuration Wizard -> Standard Configuration -> (create_secret_password).</li>
-    </ul>
-  </li>
-  <li>Install HeidiSQL:
-    <ul>
-      <li>Open HeidiSQL.</li>
-      <li>Create a new session, root/secret_password.</li>
-      <li>Connect to the session.</li>
-      <li>Create a database called "osTicket".</li>
-    </ul>
-  </li>
-</ol>
+### 1. Download and Install Windows Server 2019
 
-<h2>3. Install osTicket and configure it as a website running on this web server</h2>
-<ol>
-  <li>Install osTicket v1.15.8:</li>
-  <ul>
-    <li>Download osTicket.</li>
-    <li>Extract and copy “upload” folder to C:\inetpub\wwwroot.</li>
-    <li>Within C:\inetpub\wwwroot, rename “upload” to “osTicket”.</li>
-    <li>Reload IIS (Open IIS, Stop and Start the server).</li>
-  </ul>
-  <li>Confirm osTicket is running through web server:</li>
-  <ul>
-    <li>Go to Sites -> Default -> osTicket -> “Browse *:80”.</li>
-  </ul>
-</ol>
+- Download from [Microsoft Evaluation Center](https://www.microsoft.com/en-us/evalcenter/download-windows-server-2019).
+- Add ISO to VirtualBox:
+  - Assign 4096MB memory
+  - Set network to “Internal Network” (lan2)
+  - Disable floppy, place hard drive and optical at boot priority
+- Install Windows Server 2019 and Guest Additions (run VBoxGuestAdditions executable, reboot as needed).
+- Remove optical drive after installation.
 
-<h2>4. Enable Features and assign permissions to osTicket</h2>
-<ol>
-  <li>Enable Extensions in PHP Manager:</li>
-  <ul>
-    <li>Enable: php_imap.dll</li>
-    <li>Enable: php_intl.dll</li>
-    <li>Enable: php_opcache.dll</li>
-  </ul>
-  <li>Rename ost-config.php:</li>
-  <ul>
-    <li>From: C:\inetpub\wwwroot\osTicket\include\ost-sampleconfig.php</li>
-    <li>To: C:\inetpub\wwwroot\osTicket\include\ost-config.php</li>
-  </ul>
-  <li>Assign Permissions: ost-config.php</li>
-  <ul>
-    <li>Disable inheritance -> Remove All.</li>
-    <li>New Permissions -> Everyone -> All.</li>
-  </ul>
-</ol>
+### 2. Network Setup (Internal Network via pfSense)
 
-<h2>5. Complete installation by registering email and mySQL database</h2>
-<ol>
-  <li>Continue setting up osTicket in the browser (click Continue).</li>
-  <li>Name Helpdesk.</li>
-  <li>Default email (receives email from customers).</li>
-  <li>MySQL Database: osTicket.</li>
-  <li>MySQL Username: root.</li>
-  <li>MySQL Password: (**********).</li>
-  <li>Click “Install Now!”.</li>
-</ol>
+- Ensure server is on an “Internal Network” (no WiFi/internet, isolated lab).
+- Set static IP:
+  - Open Network & Internet settings → Adapter → Properties → IPv4 Settings.
+  - Set the following:
+    - IP Address: 10.80.80.2
+    - Subnet Mask: 255.255.255.0
+    - Default Gateway: 10.80.80.1
+    - Preferred DNS: 10.80.80.2
+  - Rename PC to “DC1”.
 
-<h2>6. Confirm osTicket can be reached by users on LocalHost</h2>
-<ol>
-  <li>Test link for agents and end-users:</li>
-  <ul>
-    <li>Agents URL: <a href="http://localhost/osTicket/scp/login.php">http://localhost/osTicket/scp/login.php</a></li>
-    <li>End Users URL: <a href="http://localhost/osTicket/">http://localhost/osTicket/</a></li>
-  </ul>
-</ol>
+### 3. Install and Configure Active Directory Domain Services
 
-<h2>7. Clean up files that pose a security risk</h2>
-<ol>
-  <li>Delete: C:\inetpub\wwwroot\osTicket\setup.</li>
-  <li>Set Permissions to “Read” only: C:\inetpub\wwwroot\osTicket\include\ost-config.php.</li>
-</ol>
+- Open Server Manager → Manage → Add Roles and Features.
+  - Choose role-based installation, select DC1.
+  - Enable “Active Directory Domain Services” and “DNS Server”; add required features.
+  - Install and promote server to a domain controller:
+    - New forest: Root domain = `AD.Lab`
+    - Directory restore password: `Dave2005`
+    - NetBIOS Name: `AD`
+- Complete promotion and installation.
 
+### 4. DNS and DHCP Configuration
+
+- Set up DNS forwarder to pfSense (10.80.80.1):
+  - Open DNS Manager → Forwarders → Edit → Add 10.80.80.1.
+- Add DHCP Server:
+  - Server Roles → Add DHCP server role.
+  - Configure DHCP scope in DHCP Manager:
+    - Start IP: 10.80.80.11 | End IP: 10.80.80.25 | Mask: 255.255.255.0
+    - Default Gateway: 10.80.80.1
+    - Activate scope.
+
+### 5. Create Users and Assign Permissions
+
+- Use “Active Directory Users and Computers” to create users:
+
+| First Name | Last Name | Username     | Password     | Permission Level  |
+|------------|-----------|--------------|--------------|-------------------|
+| Mara       | Cyber     | MaraCyber    | Dave2005     | Domain Admin      |
+| Karma      | Cyber     | KarmaCyber   | Dave@2005    | Exploitable User  |
+| KL         | Cyber     | KLCyber      | Dave@@2005   | Standard User     |
+
+- Assign MaraCyber to Domain Admins.
+
+### 6. Security Hardening & Vulnerability Lab Setup
+
+- Disable password expiration for test users as needed.
+- Open PowerShell (as Admin) and execute:
+  ```powershell
+  Set-ExecutionPolicy -ExecutionPolicy Bypass -Force
+  [System.Net.WebClient]::new().DownloadString('https://raw.githubusercontent.com/WaterExecution/vulnerable-AD-plus/master/vulnadplus.ps1') -replace 'change\.me','ad.lab' | Invoke-Expression
+  ```
+- Restart as needed.
+
+### 7. Group Policy: Disable Defender, Firewall, and Enable Remote Features
+
+- In Group Policy Management:
+  - Create GPO “Disable Protection”:
+    - Disable Windows Defender & Firewall (see detailed steps above).
+  - Create GPO “Admin Remote Login”:
+    - Registry entry: `LocalAccountFilterPolicy = 1` (REG_DWORD).
+  - Enable WinRM, RDP, and RPC via dedicated GPOs, following outlined steps above for each corresponding role.
+
+---
+
+## Testing and Access
+
+- Login as created users to verify permissions.
+- Test RDP/WinRM/RPC connections.
+- Validate DHCP functionality across the internal network.
+- Confirm group policy changes are effective.
+
+---
+
+## Additional Resources
+
+- [Explanation of Lab on Notion](https://www.notion.so/EXPLANATION-OF-LAB-2a467d4fe6888062bacadd0905926d34?pvs=21)
+
+---
+
+## Screenshots
+
+*Insert key screenshots here to help visualize steps and verify configurations*
