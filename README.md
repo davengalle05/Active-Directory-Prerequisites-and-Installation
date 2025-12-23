@@ -1,12 +1,12 @@
 # Active Directory – Prerequisites and Installation
 
-This tutorial outlines the prerequisites and installation of a **Windows Server 2019 Active Directory (AD) domain environment** within a virtualized internal network.
+This tutorial outlines the prerequisites and installation of a **Windows Server 2019 Active Directory Domain Services (AD DS)** environment within a virtualized internal network. This phase focuses on preparing the operating system, configuring networking, and promoting the server to a Domain Controller.
 
 ---
 
 ## Video Demonstration
-*(Optional – add later if recorded)*  
-YouTube: **Active Directory Tutorial (Phase 1/?) – Installation**
+*(Optional – add if recorded later)*  
+YouTube: **Active Directory Tutorial (Phase 1/3) – Installation**
 
 ---
 
@@ -16,8 +16,7 @@ YouTube: **Active Directory Tutorial (Phase 1/?) – Installation**
 - pfSense Firewall
 - Active Directory Domain Services (AD DS)
 - DNS
-- DHCP
-- Group Policy Management
+- Remote Desktop
 - PowerShell
 
 ---
@@ -31,117 +30,84 @@ YouTube: **Active Directory Tutorial (Phase 1/?) – Installation**
 
 ## List of Prerequisites
 
-- **Windows Server 2019 ISO:** Operating system used to deploy the Active Directory Domain Controller.
+- **Windows Server 2019 ISO:** Operating system used to deploy the domain controller.
 - **VirtualBox:** Hypervisor used to host the Windows Server virtual machine.
-- **pfSense:** Firewall/router used to provide internal network routing.
-- **Static IP Configuration:** Required for domain controller and DNS reliability.
-- **Administrator Access:** Required for role installation and configuration.
+- **pfSense:** Provides internal network routing and gateway services.
+- **Static IP Addressing:** Required for reliable DNS and Active Directory functionality.
+- **Administrator Privileges:** Required to install roles and promote the server.
 
 ---
 
 ## OVERVIEW
 
-1. Prepare the Windows Server 2019 OS for domain services.
+1. Prepare Windows Server 2019 for Active Directory services.
 2. Configure internal networking and static IP addressing.
 3. Install Active Directory Domain Services and DNS.
 4. Promote the server to a Domain Controller.
-5. Configure DNS and DHCP for the domain.
-6. Create domain users and assign permissions.
-7. Apply Group Policy Objects (GPOs).
-8. Prepare the environment for administrative access and testing.
+5. Verify domain and DNS functionality.
 
 ---
 
 ## 1. Prepare Windows Server 2019 for Domain Services
 
-Install Windows Server 2019 in VirtualBox and configure the system for internal network use.
+Install Windows Server 2019 in a virtualized environment and configure it for internal network use.
 
-- Allocate **4096 MB RAM**
-- Set Network Adapter to **Internal Network (lan2)**
-- Install VirtualBox Guest Additions
-- Remove installation media after setup
-- Rename system to **DC1**
+- Allocate **4096 MB RAM** in VirtualBox.
+- Set Network Adapter to **Internal Network (lan2)**.
+- Disable unnecessary boot devices (e.g., floppy).
+- Install VirtualBox Guest Additions.
+- Remove installation media after setup.
+- Rename the system to **DC1**.
 
 ---
 
 ## 2. Configure Network Settings
 
-Assign a static IP address to the server.
+Assign a static IPv4 configuration to the server to ensure proper domain and DNS operation.
 
 - IP Address: `10.80.80.2`
 - Subnet Mask: `255.255.255.0`
 - Default Gateway: `10.80.80.1`
 - Preferred DNS Server: `10.80.80.2`
 
-This ensures proper DNS and domain functionality.
+---
+
+## 3. Install Active Directory Domain Services and DNS
+
+Install the required roles using Server Manager.
+
+- Open **Server Manager → Manage → Add Roles and Features**.
+- Select **Active Directory Domain Services (AD DS)**.
+- Add required features.
+- Select and install **DNS Server**.
+- Complete role installation.
 
 ---
 
-## 3. Install Active Directory and DNS
+## 4. Promote Server to Domain Controller
 
-Install Active Directory Domain Services and DNS using Server Manager.
+Promote the server to a Domain Controller and create a new forest.
 
-- Open **Server Manager → Add Roles and Features**
-- Select **Active Directory Domain Services**
-- Add required features and DNS Server
-- Promote the server to a Domain Controller:
-  - New Forest: `AD.Lab`
-  - NetBIOS Name: `AD`
-- Complete installation and reboot
-
----
-
-## 4. Configure DNS and DHCP
-
-### DNS Configuration
-- Configure DNS forwarder:
-  - Forwarder IP: `10.80.80.1`
-
-### DHCP Configuration
-- Install DHCP Server role
-- Create a DHCP scope:
-  - Start IP: `10.80.80.11`
-  - End IP: `10.80.80.25`
-  - Subnet Mask: `255.255.255.0`
-  - Default Gateway: `10.80.80.1`
-- Activate DHCP scope
+- Choose **Add a new forest**.
+- Root Domain Name: `AD.Lab`
+- NetBIOS Name: `AD`
+- Configure Directory Services Restore Mode (DSRM) password.
+- Complete prerequisite checks.
+- Install and reboot the system.
 
 ---
 
-## 5. Create Domain Users and Assign Permissions
+## 5. Verification
 
-Create domain users using **Active Directory Users and Computers**.
+Confirm that the installation was successful.
 
-- **MaraCyber** – Domain Administrator  
-- **KarmaCyber** – Standard / Exploitable User  
-- **KLCyber** – Standard User  
-
-Add **MaraCyber** to the **Domain Admins** group.
-
----
-
-## 6. Enable Administrative and Remote Features
-
-Configure Group Policy Objects (GPOs) to allow administration and testing.
-
-- Enable Remote Desktop Protocol (RDP)
-- Enable Windows Remote Management (WinRM)
-- Enable Remote Procedure Call (RPC)
-- Configure registry settings for remote administrative access
-- Apply policies using `gpupdate /force`
-
----
-
-## 7. Prepare Vulnerable Lab Environment (Testing Only)
-
-For learning and testing purposes:
-
-- Modify PowerShell execution policy
-- Execute scripts to intentionally weaken Active Directory security
-- Disable Defender and Firewall via Group Policy (lab use only)
+- Log in using domain credentials.
+- Verify **Active Directory Users and Computers** opens correctly.
+- Confirm **DNS Manager** is functioning.
+- Ensure the system is operating as a Domain Controller.
 
 ---
 
 ## Conclusion
 
-This lab demonstrates the deployment and configuration of a **Windows Server 2019 Active Directory environment**, closely mirroring real-world enterprise domain setups. The project builds foundational IT Support and Systems Administration skills while enabling future security testing and learning scenarios.
+This phase establishes the foundation of the Active Directory environment by installing Windows Server 2019, configuring networking, and deploying Active Directory Domain Services. Subsequent phases will build on this foundation by configuring services, managing users, and applying Group Policy.
