@@ -1,142 +1,147 @@
-# Windows Server 2019 – Active Directory Domain Setup
+# Active Directory – Prerequisites and Installation
 
-This tutorial outlines the step-by-step installation, configuration, and security hardening of a Windows Server 2019 Active Directory (AD) environment in a virtualized lab. The guide is tailored for IT Support and Systems Administration learning and features realistic Domain deployment, DNS/DHCP, GPO, and vulnerability preparations.
+This tutorial outlines the prerequisites and installation of a **Windows Server 2019 Active Directory (AD) domain environment** within a virtualized internal network.
+
+---
+
+## Video Demonstration
+*(Optional – add later if recorded)*  
+YouTube: **Active Directory Tutorial (Phase 1/?) – Installation**
 
 ---
 
 ## Environments and Technologies Used
 
-- VirtualBox (Virtualization)
-- Windows Server 2019 (Evaluation)
-- pfSense Firewall (Virtual Router)
+- VirtualBox (Virtual Machines / Compute)
+- pfSense Firewall
 - Active Directory Domain Services (AD DS)
-- DNS/DHCP Services
+- DNS
+- DHCP
 - Group Policy Management
 - PowerShell
 
+---
+
 ## Operating Systems Used
 
-- Windows Server 2019
+- Windows Server 2019  
 - pfSense
 
 ---
 
-## Prerequisites
+## List of Prerequisites
 
-- Download [Windows Server 2019 Evaluation ISO](https://www.microsoft.com/en-us/evalcenter/download-windows-server-2019).
-  - Download the 64-bit ISO and rename it to “windows server 2019”.
-- VirtualBox installed with at least 4096MB memory allocated for the VM.
-- pfSense virtual appliance for network segmentation.
+- **Windows Server 2019 ISO:** Operating system used to deploy the Active Directory Domain Controller.
+- **VirtualBox:** Hypervisor used to host the Windows Server virtual machine.
+- **pfSense:** Firewall/router used to provide internal network routing.
+- **Static IP Configuration:** Required for domain controller and DNS reliability.
+- **Administrator Access:** Required for role installation and configuration.
 
 ---
 
 ## OVERVIEW
 
-1. Prepare and install Windows Server 2019 in VirtualBox.
-2. Set up internal networking and pfSense for isolation.
-3. Configure static IP and DNS on the server for lab segmentation.
-4. Install and configure Active Directory Domain Services (AD DS).
-5. Set up DNS and DHCP for AD lab environment.
-6. Create test users with varying permissions.
-7. Harden environment, apply GPOs, and enable remote services (RDP, WinRM, RPC).
-8. Prepare an intentionally vulnerable AD environment for security testing.
+1. Prepare the Windows Server 2019 OS for domain services.
+2. Configure internal networking and static IP addressing.
+3. Install Active Directory Domain Services and DNS.
+4. Promote the server to a Domain Controller.
+5. Configure DNS and DHCP for the domain.
+6. Create domain users and assign permissions.
+7. Apply Group Policy Objects (GPOs).
+8. Prepare the environment for administrative access and testing.
 
 ---
 
-## Step-by-Step Guide
+## 1. Prepare Windows Server 2019 for Domain Services
 
-### 1. Download and Install Windows Server 2019
+Install Windows Server 2019 in VirtualBox and configure the system for internal network use.
 
-- Download from [Microsoft Evaluation Center](https://www.microsoft.com/en-us/evalcenter/download-windows-server-2019).
-- Add ISO to VirtualBox:
-  - Assign 4096MB memory
-  - Set network to “Internal Network” (lan2)
-  - Disable floppy, place hard drive and optical at boot priority
-- Install Windows Server 2019 and Guest Additions (run VBoxGuestAdditions executable, reboot as needed).
-- Remove optical drive after installation.
-
-### 2. Network Setup (Internal Network via pfSense)
-
-- Ensure server is on an “Internal Network” (no WiFi/internet, isolated lab).
-- Set static IP:
-  - Open Network & Internet settings → Adapter → Properties → IPv4 Settings.
-  - Set the following:
-    - IP Address: 10.80.80.2
-    - Subnet Mask: 255.255.255.0
-    - Default Gateway: 10.80.80.1
-    - Preferred DNS: 10.80.80.2
-  - Rename PC to “DC1”.
-
-### 3. Install and Configure Active Directory Domain Services
-
-- Open Server Manager → Manage → Add Roles and Features.
-  - Choose role-based installation, select DC1.
-  - Enable “Active Directory Domain Services” and “DNS Server”; add required features.
-  - Install and promote server to a domain controller:
-    - New forest: Root domain = `AD.Lab`
-    - Directory restore password: `Dave2005`
-    - NetBIOS Name: `AD`
-- Complete promotion and installation.
-
-### 4. DNS and DHCP Configuration
-
-- Set up DNS forwarder to pfSense (10.80.80.1):
-  - Open DNS Manager → Forwarders → Edit → Add 10.80.80.1.
-- Add DHCP Server:
-  - Server Roles → Add DHCP server role.
-  - Configure DHCP scope in DHCP Manager:
-    - Start IP: 10.80.80.11 | End IP: 10.80.80.25 | Mask: 255.255.255.0
-    - Default Gateway: 10.80.80.1
-    - Activate scope.
-
-### 5. Create Users and Assign Permissions
-
-- Use “Active Directory Users and Computers” to create users:
-
-| First Name | Last Name | Username     | Password     | Permission Level  |
-|------------|-----------|--------------|--------------|-------------------|
-| Mara       | Cyber     | MaraCyber    | Dave2005     | Domain Admin      |
-| Karma      | Cyber     | KarmaCyber   | Dave@2005    | Exploitable User  |
-| KL         | Cyber     | KLCyber      | Dave@@2005   | Standard User     |
-
-- Assign MaraCyber to Domain Admins.
-
-### 6. Security Hardening & Vulnerability Lab Setup
-
-- Disable password expiration for test users as needed.
-- Open PowerShell (as Admin) and execute:
-  ```powershell
-  Set-ExecutionPolicy -ExecutionPolicy Bypass -Force
-  [System.Net.WebClient]::new().DownloadString('https://raw.githubusercontent.com/WaterExecution/vulnerable-AD-plus/master/vulnadplus.ps1') -replace 'change\.me','ad.lab' | Invoke-Expression
-  ```
-- Restart as needed.
-
-### 7. Group Policy: Disable Defender, Firewall, and Enable Remote Features
-
-- In Group Policy Management:
-  - Create GPO “Disable Protection”:
-    - Disable Windows Defender & Firewall (see detailed steps above).
-  - Create GPO “Admin Remote Login”:
-    - Registry entry: `LocalAccountFilterPolicy = 1` (REG_DWORD).
-  - Enable WinRM, RDP, and RPC via dedicated GPOs, following outlined steps above for each corresponding role.
+- Allocate **4096 MB RAM**
+- Set Network Adapter to **Internal Network (lan2)**
+- Install VirtualBox Guest Additions
+- Remove installation media after setup
+- Rename system to **DC1**
 
 ---
 
-## Testing and Access
+## 2. Configure Network Settings
 
-- Login as created users to verify permissions.
-- Test RDP/WinRM/RPC connections.
-- Validate DHCP functionality across the internal network.
-- Confirm group policy changes are effective.
+Assign a static IP address to the server.
 
----
+- IP Address: `10.80.80.2`
+- Subnet Mask: `255.255.255.0`
+- Default Gateway: `10.80.80.1`
+- Preferred DNS Server: `10.80.80.2`
 
-## Additional Resources
-
-- [Explanation of Lab on Notion](https://www.notion.so/EXPLANATION-OF-LAB-2a467d4fe6888062bacadd0905926d34?pvs=21)
+This ensures proper DNS and domain functionality.
 
 ---
 
-## Screenshots
+## 3. Install Active Directory and DNS
 
-*Insert key screenshots here to help visualize steps and verify configurations*
+Install Active Directory Domain Services and DNS using Server Manager.
+
+- Open **Server Manager → Add Roles and Features**
+- Select **Active Directory Domain Services**
+- Add required features and DNS Server
+- Promote the server to a Domain Controller:
+  - New Forest: `AD.Lab`
+  - NetBIOS Name: `AD`
+- Complete installation and reboot
+
+---
+
+## 4. Configure DNS and DHCP
+
+### DNS Configuration
+- Configure DNS forwarder:
+  - Forwarder IP: `10.80.80.1`
+
+### DHCP Configuration
+- Install DHCP Server role
+- Create a DHCP scope:
+  - Start IP: `10.80.80.11`
+  - End IP: `10.80.80.25`
+  - Subnet Mask: `255.255.255.0`
+  - Default Gateway: `10.80.80.1`
+- Activate DHCP scope
+
+---
+
+## 5. Create Domain Users and Assign Permissions
+
+Create domain users using **Active Directory Users and Computers**.
+
+- **MaraCyber** – Domain Administrator  
+- **KarmaCyber** – Standard / Exploitable User  
+- **KLCyber** – Standard User  
+
+Add **MaraCyber** to the **Domain Admins** group.
+
+---
+
+## 6. Enable Administrative and Remote Features
+
+Configure Group Policy Objects (GPOs) to allow administration and testing.
+
+- Enable Remote Desktop Protocol (RDP)
+- Enable Windows Remote Management (WinRM)
+- Enable Remote Procedure Call (RPC)
+- Configure registry settings for remote administrative access
+- Apply policies using `gpupdate /force`
+
+---
+
+## 7. Prepare Vulnerable Lab Environment (Testing Only)
+
+For learning and testing purposes:
+
+- Modify PowerShell execution policy
+- Execute scripts to intentionally weaken Active Directory security
+- Disable Defender and Firewall via Group Policy (lab use only)
+
+---
+
+## Conclusion
+
+This lab demonstrates the deployment and configuration of a **Windows Server 2019 Active Directory environment**, closely mirroring real-world enterprise domain setups. The project builds foundational IT Support and Systems Administration skills while enabling future security testing and learning scenarios.
